@@ -158,6 +158,10 @@ define :mongodb_instance, :mongodb_type => "mongod" , :action => [:enable, :star
       # we don't care about a running mongodb service in these cases, all we need is stopping it
       ignore_failure true
     end
+
+    # TODO: should this be determined automatically by ohai?
+    # What if we are not on Ubuntu/Debian?
+    provider Chef::Provider::Service::Upstart
   end
 
   # replicaset
