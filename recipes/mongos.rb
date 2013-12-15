@@ -34,7 +34,8 @@ configsrv = search(
 )
 
 if configsrv.length != 1 and configsrv.length != 3
-  Chef::Log.error("Found #{configsrv.length} configserver, need either one or three of them")
+  Chef::Log.error("Found #{configsrv.length} configserver, need either one or three of them, " +
+                  "but found #{configsrv.length}: #{configsrv}")
   raise "Wrong number of configserver nodes"
 end
 
