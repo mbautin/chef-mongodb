@@ -107,12 +107,6 @@ end
 default[:mongodb][:package_version] = nil
 default[:mongodb][:template_cookbook] = "mongodb"
 
-
-default[:mongodb][:dbconfig_file][:mongod] = '/etc/mongod.conf'
-default[:mongodb][:dbconfig_file][:shard] = '/etc/mongo_shard.conf'
-default[:mongodb][:dbconfig_file][:configserver] = '/etc/mongo_configserver.conf'
-default[:mongodb][:dbconfig_file][:mongos] = '/etc/mongos.conf'
-
 # Default ports from:
 # http://docs.mongodb.org/manual/reference/default-mongodb-port/
 
