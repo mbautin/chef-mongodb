@@ -24,6 +24,7 @@ include_recipe "mongodb"
 service "mongodb" do
   supports :status => true, :restart => true
   action [:disable, :stop]
+  ignore_failure true
 end
 
 # we are not starting the configserver service with the --configsvr
@@ -31,9 +32,7 @@ end
 # running on, and we are overwriting this port anyway.
 mongodb_instance "configserver" do
   mongodb_type "configserver"
-  port         node['mongodb']['port']
   logpath      node['mongodb']['logpath']
-  dbpath       node['mongodb']['dbpath']
   enable_rest  node['mongodb']['enable_rest']
   smallfiles   node['mongodb']['smallfiles']
 end

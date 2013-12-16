@@ -49,7 +49,14 @@ default[:mongodb][:init_dir] = "/etc/init.d"
 default[:mongodb][:init_script_template] = "debian-mongodb.init.erb"
 default[:mongodb][:sysconfig_file] = "/etc/default/mongodb"
 default[:mongodb][:sysconfig_file_template] = "mongodb.sysconfig.erb"
+
 default[:mongodb][:dbconfig_file] = node[:mongodb][:configfile] || "/etc/mongodb.conf"
+
+default[:mongodb][:mongod][:dbconfig_file] = '/etc/mongod.conf'
+default[:mongodb][:shard][:dbconfig_file] = '/etc/mongo_shard.conf'
+default[:mongodb][:configserver][:dbconfig_file] = '/etc/mongo_configserver.conf'
+default[:mongodb][:mongos][:dbconfig_file] = '/etc/mongos.conf'
+
 default[:mongodb][:dbconfig_file_template] = "mongodb.conf.erb"
 default[:mongodb][:package_name] = "mongodb"
 
@@ -99,6 +106,26 @@ end
 
 default[:mongodb][:package_version] = nil
 default[:mongodb][:template_cookbook] = "mongodb"
+
+
+default[:mongodb][:dbconfig_file][:mongod] = '/etc/mongod.conf'
+default[:mongodb][:dbconfig_file][:shard] = '/etc/mongo_shard.conf'
+default[:mongodb][:dbconfig_file][:configserver] = '/etc/mongo_configserver.conf'
+default[:mongodb][:dbconfig_file][:mongos] = '/etc/mongos.conf'
+
+# Default ports from:
+# http://docs.mongodb.org/manual/reference/default-mongodb-port/
+
+default[:mongodb][:mongod][:port] = 27017
+default[:mongodb][:shard][:port] = 27018
+default[:mongodb][:configserver][:port] = 27019
+
+# This is non-standard but we want to be able to run mongos on the same node
+# with other mongodb daemons.
+default[:mongodb][:mongos][:port] = 27020
+
+# http://docs.mongodb.org/manual/reference/configuration-options/#configsvr
+default[:mongodb][:configserver][:dbpath] = "/data/configdb"
 
 # These options are being deprecated (see dbconfig.rb)
 default[:mongodb][:port] = 27017

@@ -24,7 +24,6 @@ include_recipe "mongodb::mongo_gem"
 if !node.recipe?("mongodb::shard")
   mongodb_instance node['mongodb']['instance_name'] do
     mongodb_type "mongod"
-    port         node['mongodb']['port']
     logpath      node['mongodb']['logpath']
     dbpath       node['mongodb']['dbpath']
     replicaset   node

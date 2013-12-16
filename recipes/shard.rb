@@ -25,6 +25,7 @@ include_recipe "mongodb::default"
 service "mongodb" do
   supports :status => true, :restart => true
   action [:disable, :stop]
+  ignore_failure true
 end
 
 is_replicated = node.recipe?("mongodb::replicaset")
@@ -35,7 +36,6 @@ is_replicated = node.recipe?("mongodb::replicaset")
 # running on, and we are overwriting this port anyway.
 mongodb_instance "shard" do
   mongodb_type "shard"
-  port         node['mongodb']['port']
   logpath      node['mongodb']['logpath']
   dbpath       node['mongodb']['dbpath']
   if is_replicated

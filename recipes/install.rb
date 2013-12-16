@@ -11,14 +11,19 @@ file node['mongodb']['sysconfig_file'] do
     action :create_if_missing
 end
 
-# just-in-case config file drop
-template node['mongodb']['dbconfig_file'] do
-    cookbook node['mongodb']['template_cookbook']
-    source node['mongodb']['dbconfig_file_template']
-    group node['mongodb']['root_group']
-    owner "root"
-    mode 0644
-    action :create_if_missing
+if false
+    # We no longer do this, because node['mongodb']['dbconfig_file'] is a hash
+    # keyed on the instance type.
+
+    # just-in-case config file drop
+    template node['mongodb']['dbconfig_file'] do
+        cookbook node['mongodb']['template_cookbook']
+        source node['mongodb']['dbconfig_file_template']
+        group node['mongodb']['root_group']
+        owner "root"
+        mode 0644
+        action :create_if_missing
+    end
 end
 
 # and we install our own init file

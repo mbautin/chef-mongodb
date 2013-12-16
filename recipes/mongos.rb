@@ -24,6 +24,7 @@ include_recipe "mongodb::mongo_gem"
 
 service "mongodb" do
   action [:disable, :stop]
+  ignore_failure true
 end
 
 configsrv = search(
@@ -41,7 +42,6 @@ end
 
 mongodb_instance "mongos" do
   mongodb_type "mongos"
-  port         node['mongodb']['port']
   logpath      node['mongodb']['logpath']
   dbpath       node['mongodb']['dbpath']
   configserver configsrv
