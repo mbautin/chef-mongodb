@@ -19,6 +19,7 @@ script
     . <%= node['mongodb']['sysconfig_file'] %>;
   fi
   if [ "x$ENABLE_MONGOD" = "xyes" ]; then
-  exec start-stop-daemon --start --quiet --chuid $DAEMON_USER --exec $DAEMON -- $DAEMON_OPTS
+    exec start-stop-daemon --start --quiet --chuid $DAEMON_USER --exec $DAEMON -- \
+      --config <%= @config_file %>
   fi
 end script

@@ -21,7 +21,7 @@
 
 define :mongodb_instance, :mongodb_type => "mongod" , :action => [:enable, :start],
     :bind_ip => nil, :port => 27017 , :logpath => "/var/log/mongodb",
-    :dbpath => "/data", :configserver => [],
+    :dbpath => nil, :configserver => [],
     :replicaset => nil, :enable_rest => false, :smallfiles => false, :notifies => [] do
 
   include_recipe "mongodb::default"
@@ -32,7 +32,7 @@ define :mongodb_instance, :mongodb_type => "mongod" , :action => [:enable, :star
   service_notifies = params[:notifies]
 
   bind_ip = params[:bind_ip]
-  port = params[:port]
+  port = params[:port] || node['mongodb'][type]['port']
 
   logpath = params[:logpath]
 
@@ -78,7 +78,7 @@ define :mongodb_instance, :mongodb_type => "mongod" , :action => [:enable, :star
   else
     provider = "mongos"
     dbpath = nil
-    configserver = configserver_nodes.collect{|n| "#{(n['mongodb']['configserver_url'] || n['fqdn'])}:#{n['mongodb']['port']}" }.sort.join(",")
+    configserver = configserver_nodes.collect{|n| "#{(n['mongodb']['configserver_url'] || n['fqdn'])}:#{n['mongodb']['configserver']['port']}" }.sort.join(",")
   end
 
   # default file
@@ -93,7 +93,35 @@ define :mongodb_instance, :mongodb_type => "mongod" , :action => [:enable, :star
   end
 
   # config file
-  template node['mongodb']['dbconfig_file'] do
+  config_file = node['mongodb']['dbconfig_file'][type]
+  config = node['mongodb']['config'].to_hash.clone
+
+  if type == 'configserver'
+    dbpath ||= node['mongodb']['configserver']['dbpath']
+    config['configsvr'] = true
+  else
+    dbpath ||= node['mongodb']['dbpath']
+  end
+
+  if type == 'shard'
+    # The only effect of this is a port number change, but it is good to have
+    # this for clarity.
+    config['shardsvr'] = true
+  end
+
+  if type == 'mongos'
+    # mongos does not want a dbpath
+    config.delete('dbpath')
+
+    config['configdb'] = configserver
+  else
+    config['dbpath'] = dbpath
+  end
+
+  config['logpath'] = File.join(node['mongodb']['logpath'], "#{type}.log")
+  config['port'] = port
+
+  template config_file do
     cookbook node['mongodb']['template_cookbook']
     source node['mongodb']['dbconfig_file_template']
     group node['mongodb']['root_group']
@@ -101,6 +129,8 @@ define :mongodb_instance, :mongodb_type => "mongod" , :action => [:enable, :star
     mode "0644"
     action :create
     notifies :restart, "service[#{name}]"
+    variables :mongodb_type => type,
+              :config => config
   end
 
   # log dir [make sure it exists]
@@ -135,9 +165,8 @@ define :mongodb_instance, :mongodb_type => "mongod" , :action => [:enable, :star
     group node['mongodb']['root_group']
     owner "root"
     mode "0755"
-    variables({
-        :provides => provider
-    })
+    variables :provides => provider,
+              :config_file => config_file
     action :create
   end
 
