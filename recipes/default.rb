@@ -39,7 +39,11 @@ configured_as_replicaset = case Chef::Version.new(Chef::VERSION).major
   else node.run_context.loaded_recipe?(replicaset_recipe)
 end
 
-unless configured_as_replicaset
+
+# Don't install the default configuration. We need more logic to decide
+# whether to do this: not only if the local node is configured as a
+# replicaset, but also if it is a shard, configserver, or mongos.
+unless true # configured_as_replicaset
   mongodb_instance node['mongodb']['instance_name'] do
     mongodb_type "mongod"
     bind_ip      node['mongodb']['bind_ip']

@@ -20,7 +20,7 @@
 #
 
 define :mongodb_instance, :mongodb_type => "mongod" , :action => [:enable, :start],
-    :bind_ip => nil, :port => 27017 , :logpath => "/var/log/mongodb",
+    :bind_ip => nil, :port => nil, :logpath => "/var/log/mongodb",
     :dbpath => nil, :configserver => [],
     :replicaset => nil, :enable_rest => false, :smallfiles => false, :notifies => [] do
 
@@ -93,7 +93,7 @@ define :mongodb_instance, :mongodb_type => "mongod" , :action => [:enable, :star
   end
 
   # config file
-  config_file = node['mongodb']['dbconfig_file'][type]
+  config_file = node['mongodb'][type]['dbconfig_file']
   config = node['mongodb']['config'].to_hash.clone
 
   if type == 'configserver'
@@ -116,6 +116,12 @@ define :mongodb_instance, :mongodb_type => "mongod" , :action => [:enable, :star
     config['configdb'] = configserver
   else
     config['dbpath'] = dbpath
+  end
+
+  if ['mongos', 'configserver'].include?(type)
+    # mongos and configsevers don't know about replSet.
+    config.delete(:replSet)
+    config.delete('replSet')
   end
 
   config['logpath'] = File.join(node['mongodb']['logpath'], "#{type}.log")
