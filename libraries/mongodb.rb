@@ -20,6 +20,7 @@
 #
 
 require 'json'
+require 'pp'
 
 class Chef::ResourceDefinitionList::MongoDB
 
@@ -37,17 +38,14 @@ class Chef::ResourceDefinitionList::MongoDB
       end
     end
 
-    port = node['mongodb']['shard']['port']
-    Chef::Log.info("Using port #{port} to configure replicaset")
-
     begin
       connection = nil
       rescue_connection_failure do
-        connection = Mongo::Connection.new('localhost', port, :op_timeout => 5, :slave_ok => true)
+        connection = Mongo::Connection.new('localhost', node['mongodb']['shard']['port'], :op_timeout => 5, :slave_ok => true)
         connection.database_names # check connection
       end
     rescue Exception => e
-      Chef::Log.warn("Could not connect to database: 'localhost:#{port}', reason: #{e}")
+      Chef::Log.warn("Could not connect to database: 'localhost:#{node['mongodb']['shard']['port']}', reason: #{e}")
       return
     end
 
@@ -57,7 +55,7 @@ class Chef::ResourceDefinitionList::MongoDB
     rs_members = []
     rs_options = {}
     members.each_index do |n|
-      host = "#{members[n]['fqdn']}:#{members[n]['mongodb']['port']}"
+      host = "#{members[n]['fqdn']}:#{members[n]['mongodb']['shard']['port']}"
       rs_options[host] = {}
       rs_options[host]['arbiterOnly'] = true if members[n]['mongodb']['replica_arbiter_only']
       rs_options[host]['buildIndexes'] = false unless members[n]['mongodb']['replica_build_indexes']
@@ -84,7 +82,7 @@ class Chef::ResourceDefinitionList::MongoDB
 
     rs_member_ips = []
     members.each_index do |n|
-      port = members[n]['mongodb']['port']
+      port = members[n]['mongodb']['shard']['port']
       rs_member_ips << {"_id" => n, "host" => "#{members[n]['ipaddress']}:#{port}"}
     end
 
@@ -104,7 +102,7 @@ class Chef::ResourceDefinitionList::MongoDB
     if result.fetch("ok", nil) == 1
       # everything is fine, do nothing
     elsif result.fetch("errmsg", nil) =~ %r/(\S+) is already initiated/ || (result.fetch("errmsg", nil) == "already initialized")
-      server,port = $1.nil? ? ['localhost',node['mongodb']['port']] : $1.split(":")
+      server, port = $1.nil? ? ['localhost',node['mongodb']['shard']['port']] : $1.split(":")
       begin
         connection = Mongo::Connection.new(server, port, :op_timeout => 5, :slave_ok => true)
       rescue
@@ -113,6 +111,9 @@ class Chef::ResourceDefinitionList::MongoDB
 
       # check if both configs are the same
       config = connection['local']['system']['replset'].find_one({"_id" => name})
+      if config.nil?
+        raise "Could not find replica set with _id #{name}, replica sets: #{PP.pp(connection['local']['system']['replset'], '')}"
+      end
 
       if config['_id'] == name and config['members'] == rs_members
         # config is up-to-date, do nothing
@@ -152,7 +153,7 @@ class Chef::ResourceDefinitionList::MongoDB
           result = admin.command(cmd, :check_response => false)
         rescue Mongo::ConnectionFailure
           # reconfiguring destroys exisiting connections, reconnect
-          connection = Mongo::Connection.new('localhost', node['mongodb']['port'], :op_timeout => 5, :slave_ok => true)
+          connection = Mongo::Connection.new('localhost', node['mongodb']['shard']['port'], :op_timeout => 5, :slave_ok => true)
           config = connection['local']['system']['replset'].find_one({"_id" => name})
                 # Validate configuration change
 		  if config['members'] == rs_members
@@ -199,7 +200,7 @@ class Chef::ResourceDefinitionList::MongoDB
           result = admin.command(cmd, :check_response => false)
         rescue Mongo::ConnectionFailure
           # reconfiguring destroys exisiting connections, reconnect
-          connection = Mongo::Connection.new('localhost', node['mongodb']['port'], :op_timeout => 5, :slave_ok => true)
+          connection = Mongo::Connection.new('localhost', node['mongodb']['shard']['port'], :op_timeout => 5, :slave_ok => true)
           config = connection['local']['system']['replset'].find_one({"_id" => name})
           # Validate configuration change
           if config['members'] == rs_members
@@ -234,7 +235,7 @@ class Chef::ResourceDefinitionList::MongoDB
       else
         key = '_single'
       end
-      shard_groups[key] << "#{n['fqdn']}:#{n['mongodb']['port']}"
+      shard_groups[key] << "#{n['fqdn']}:#{n['mongodb']['mongos']['port']}"
     end
     Chef::Log.info(shard_groups.inspect)
 
@@ -249,9 +250,9 @@ class Chef::ResourceDefinitionList::MongoDB
     Chef::Log.info(shard_members.inspect)
 
     begin
-      connection = Mongo::Connection.new('localhost', node['mongodb']['port'], :op_timeout => 5)
+      connection = Mongo::Connection.new('localhost', node['mongodb']['mongos']['port'], :op_timeout => 5)
     rescue Exception => e
-      Chef::Log.warn("Could not connect to database: 'localhost:#{node['mongodb']['port']}', reason #{e}")
+      Chef::Log.warn("Could not connect to database: 'localhost:#{node['mongodb']['mongos']['port']}', reason #{e}")
       return
     end
 
@@ -275,9 +276,9 @@ class Chef::ResourceDefinitionList::MongoDB
     require 'mongo'
 
     begin
-      connection = Mongo::Connection.new('localhost', node['mongodb']['port'], :op_timeout => 5)
+      connection = Mongo::Connection.new('localhost', node['mongodb']['mongos']['port'], :op_timeout => 5)
     rescue Exception => e
-      Chef::Log.warn("Could not connect to database: 'localhost:#{node['mongodb']['port']}', reason #{e}")
+      Chef::Log.warn("Could not connect to database: 'localhost:#{node['mongodb']['mongos']['port']}', reason #{e}")
       return
     end
 

@@ -107,6 +107,9 @@ define :mongodb_instance, :mongodb_type => "mongod" , :action => [:enable, :star
     # The only effect of this is a port number change, but it is good to have
     # this for clarity.
     config['shardsvr'] = true
+
+    config.delete(:replSet)
+    config['replSet'] = replicaset_name
   end
 
   if type == 'mongos'
