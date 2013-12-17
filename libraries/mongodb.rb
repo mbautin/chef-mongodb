@@ -38,6 +38,7 @@ class Chef::ResourceDefinitionList::MongoDB
     end
 
     port = node['mongodb']['shard']['port']
+    Chef::Log.info("Using port #{port} to configure replicaset")
 
     begin
       connection = nil
